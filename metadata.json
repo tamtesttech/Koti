@@ -1,0 +1,6 @@
+{
+  "name": "Koti",
+  "description": "A cozy app for mental health wellness tracking through personalized mental exercises, music mood tracking and a void for all your emotions.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
