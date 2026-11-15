@@ -16,7 +16,6 @@ interface IntroFlowProps {
   onCompleteOnboarding: () => void;
   onSkip: () => void;
   onBackToQuestions: () => void;
-  onStartMusic?: () => void;
 }
 
 export const IntroFlow: React.FC<IntroFlowProps> = ({
@@ -27,7 +26,6 @@ export const IntroFlow: React.FC<IntroFlowProps> = ({
   onCompleteOnboarding,
   onSkip,
   onBackToQuestions,
-  onStartMusic,
 }) => {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [otherOpen, setOtherOpen] = useState<Record<string, boolean>>({});
@@ -95,7 +93,6 @@ export const IntroFlow: React.FC<IntroFlowProps> = ({
   };
 
   const handleNextQuestion = () => {
-    onStartMusic?.();
     if (questionIndex < QUESTIONNAIRE_QUESTIONS.length - 1) {
       setQuestionIndex((i) => i + 1);
     } else {
@@ -104,7 +101,6 @@ export const IntroFlow: React.FC<IntroFlowProps> = ({
   };
 
   const handleSkipClick = () => {
-    onStartMusic?.();
     onSkip();
   };
 
@@ -337,10 +333,7 @@ export const IntroFlow: React.FC<IntroFlowProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  onStartMusic?.();
-                  onCompleteOnboarding();
-                }}
+                onClick={onCompleteOnboarding}
                 className="clay-button-primary min-h-[46px] px-7 py-2.5 rounded-2xl text-sm font-semibold flex items-center gap-2 cursor-pointer"
               >
                 <span>Enter Koti</span>

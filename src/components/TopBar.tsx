@@ -5,15 +5,11 @@ import {
   Compass,
   RotateCcw,
   Sparkles,
-  Volume2,
-  VolumeX,
 } from 'lucide-react';
 
 interface TopBarProps {
   coreFocus?: string;
   showDemoMenu?: boolean;
-  isMuted: boolean;
-  onToggleMute: () => void;
   onReplayIntro: () => void;
   onReplayTutorial: () => void;
   onOpenMonthlyCheckIn: () => void;
@@ -23,8 +19,6 @@ interface TopBarProps {
 export const TopBar: React.FC<TopBarProps> = ({
   coreFocus,
   showDemoMenu = true,
-  isMuted,
-  onToggleMute,
   onReplayIntro,
   onReplayTutorial,
   onOpenMonthlyCheckIn,
@@ -58,21 +52,6 @@ export const TopBar: React.FC<TopBarProps> = ({
 
       {showDemoMenu && (
         <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={onToggleMute}
-            aria-pressed={!isMuted}
-            aria-label={isMuted ? 'Unmute background music' : 'Mute background music'}
-            title={isMuted ? 'Sound Off' : 'Sound On'}
-            className="clay-button-secondary min-h-[38px] min-w-[38px] px-2.5 py-1.5 rounded-2xl flex items-center justify-center cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#AC6332]"
-          >
-            {isMuted ? (
-              <VolumeX className="w-4 h-4 text-[#8F4F25]" />
-            ) : (
-              <Volume2 className="w-4 h-4 text-[#4A2D15]" />
-            )}
-          </button>
-
           <div className="relative" ref={menuRef}>
             <button
               type="button"

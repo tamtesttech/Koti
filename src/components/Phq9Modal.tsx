@@ -153,7 +153,7 @@ export const Phq9Modal: React.FC<Phq9ModalProps> = ({
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-4 pb-5 border-b border-[#674223]/12">
-          <div className="pl-10 sm:pl-12">
+          <div>
             <p className="text-xs font-semibold text-[#655F35]">
               Monthly Wellness Check-In · Official PHQ-9 Screening
             </p>

@@ -27,7 +27,6 @@ export const TheVoidView: React.FC<TheVoidViewProps> = ({
   onSaveSession,
 }) => {
   const [phase, setPhase] = useState<KintsugiPhase>('idle');
-  const [breakFrame, setBreakFrame] = useState<'cracking' | 'shattered'>('cracking');
   const [inputText, setInputText] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [voiceNote, setVoiceNote] = useState<string | null>(null);
@@ -39,6 +38,13 @@ export const TheVoidView: React.FC<TheVoidViewProps> = ({
   } | null>(null);
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const resultRef = useRef<{
+    empathy: string;
+    affirmation: string;
+    emotionalTag: string;
+  } | null>(null);
+  const videoEndedRef = useRef<boolean>(false);
 
   useEffect(() => {
     return () => {
@@ -127,12 +133,19 @@ export const TheVoidView: React.FC<TheVoidViewProps> = ({
     }
 
     setErrorMsg(null);
-    setBreakFrame('cracking');
+    setResult(null);
+    resultRef.current = null;
+    videoEndedRef.current = false;
     setPhase('breaking');
 
-    const shatterTimer = window.setTimeout(() => {
-      setBreakFrame('shattered');
-    }, 950);
+    const vid = videoRef.current;
+    if (vid) {
+      vid.currentTime = 1.4;
+      vid.playbackRate = 1.2;
+      vid.play().catch(() => {
+        // Ignore autoplay restrictions if any
+      });
+    }
 
     try {
       const res = await fetch('/api/void/release', {
@@ -146,16 +159,13 @@ export const TheVoidView: React.FC<TheVoidViewProps> = ({
         throw new Error(data.error || 'Unable to connect.');
       }
 
-      window.clearTimeout(shatterTimer);
-      setBreakFrame('shattered');
-
-      setResult({
+      const nextResult = {
         empathy: data.empathy,
         affirmation: data.affirmation,
         emotionalTag: data.emotionalTag,
-      });
-
-      setPhase('mending');
+      };
+      resultRef.current = nextResult;
+      setResult(nextResult);
 
       onSaveSession({
         id: `void-${Date.now()}`,
@@ -166,11 +176,16 @@ export const TheVoidView: React.FC<TheVoidViewProps> = ({
         createdAt: new Date().toISOString(),
       });
 
-      window.setTimeout(() => {
+      if (videoEndedRef.current) {
         setPhase('mended');
-      }, 2100);
+      } else if (videoRef.current && videoRef.current.currentTime >= 8.2) {
+        setPhase('mending');
+      }
     } catch (err) {
-      window.clearTimeout(shatterTimer);
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+      }
       const message =
         err instanceof Error ? err.message : 'Unable to connect.';
       setErrorMsg(message);
@@ -178,10 +193,31 @@ export const TheVoidView: React.FC<TheVoidViewProps> = ({
     }
   };
 
+  const handleVideoTimeUpdate = () => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    if (phase === 'breaking' && resultRef.current && vid.currentTime >= 8.2) {
+      setPhase('mending');
+    }
+  };
+
+  const handleVideoEnded = () => {
+    videoEndedRef.current = true;
+    if (resultRef.current) {
+      setPhase('mended');
+    }
+  };
+
   const handleResetVase = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
     setPhase('idle');
     setInputText('');
     setResult(null);
+    resultRef.current = null;
+    videoEndedRef.current = false;
     setErrorMsg(null);
   };
 
@@ -214,11 +250,11 @@ export const TheVoidView: React.FC<TheVoidViewProps> = ({
       {/* Main Content */}
       <div className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-8 pb-10 flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12">
         {/* Vase Visual Stage */}
-        <div className="relative w-full max-w-[340px] aspect-square flex items-center justify-center shrink-0">
+        <div className="relative w-[240px] sm:w-[290px] max-h-[64vh] aspect-[9/16] flex items-center justify-center shrink-0">
           <div
-            className={`absolute inset-6 rounded-full blur-3xl pointer-events-none transition-all duration-1000 ${
+            className={`absolute inset-x-2 inset-y-10 rounded-full blur-3xl pointer-events-none transition-all duration-1000 ${
               phase === 'mending' || phase === 'mended'
-                ? 'bg-[#C4863C]/38 scale-110'
+                ? 'bg-[#C4863C]/40 scale-110'
                 : phase === 'breaking'
                   ? 'bg-[#AC6332]/25 scale-95'
                   : 'bg-[#DCC3AC]/18 scale-100'
@@ -226,75 +262,28 @@ export const TheVoidView: React.FC<TheVoidViewProps> = ({
             aria-hidden="true"
           />
 
-          {phase === 'idle' && (
-            <img
-              src="/assets/processed/vase_intact.png"
-              alt="Unbroken terracotta vase"
-              referrerPolicy="no-referrer"
-              className="relative z-10 w-[86%] h-[86%] object-contain drop-shadow-[0_24px_38px_rgba(0,0,0,0.65)] transition-all duration-500"
-            />
-          )}
-
-          {phase === 'breaking' && (
-            <div className="relative z-10 w-[88%] h-[88%] flex items-center justify-center">
-              <img
-                src={
-                  breakFrame === 'cracking'
-                    ? '/assets/processed/vase_breaking.png'
-                    : '/assets/processed/vase_shattered.png'
-                }
-                alt="Terracotta vase breaking"
-                referrerPolicy="no-referrer"
-                className="w-full h-full object-contain drop-shadow-[0_24px_38px_rgba(0,0,0,0.65)] transition-all duration-500"
-              />
-            </div>
-          )}
-
-          {(phase === 'mending' || phase === 'mended') && (
-            <div className="relative z-10 w-[88%] h-[88%] flex items-center justify-center">
-              <img
-                src="/assets/processed/vase_kintsugi.png"
-                alt="Terracotta vase mended with gold Kintsugi seams"
-                referrerPolicy="no-referrer"
-                className={`w-full h-full object-contain drop-shadow-[0_24px_42px_rgba(196,134,60,0.45)] transition-all duration-1000 ${
-                  phase === 'mending' ? 'opacity-90 scale-[0.98]' : 'opacity-100 scale-100'
-                }`}
-              />
-
-              <svg
-                viewBox="0 0 240 240"
-                className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-700 ${
-                  phase === 'mending' ? 'opacity-100' : 'opacity-0'
-                }`}
-                aria-hidden="true"
-              >
-                <path
-                  d="M106 20 L122 58 L138 88 L178 118"
-                  stroke="#C4863C"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  fill="none"
-                  className="kintsugi-seam-draw"
-                />
-                <path
-                  d="M52 108 L108 134 L145 94 L188 150"
-                  stroke="#F3C982"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  fill="none"
-                  className="kintsugi-seam-draw"
-                />
-                <path
-                  d="M108 134 L94 214"
-                  stroke="#C4863C"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  fill="none"
-                  className="kintsugi-seam-draw"
-                />
-              </svg>
-            </div>
-          )}
+          <video
+            ref={videoRef}
+            src="/assets/processed/vase_animation.webm"
+            poster="/assets/processed/vase_anim_poster.png"
+            muted
+            playsInline
+            preload="auto"
+            onTimeUpdate={handleVideoTimeUpdate}
+            onEnded={handleVideoEnded}
+            aria-label={
+              phase === 'idle'
+                ? 'Unbroken terracotta vase'
+                : phase === 'breaking'
+                  ? 'Terracotta vase shattering'
+                  : 'Terracotta vase mending with liquid gold Kintsugi seams'
+            }
+            className={`relative z-10 w-full h-full object-contain pointer-events-none select-none transition-all duration-700 ${
+              phase === 'mending' || phase === 'mended'
+                ? 'drop-shadow-[0_24px_42px_rgba(196,134,60,0.48)]'
+                : 'drop-shadow-[0_24px_38px_rgba(0,0,0,0.65)]'
+            }`}
+          />
         </div>
 
         {/* Right Side */}

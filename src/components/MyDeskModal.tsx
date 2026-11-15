@@ -94,7 +94,7 @@ export const MyDeskModal: React.FC<MyDeskModalProps> = ({
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#674223]/12">
-          <div className="pl-10 sm:pl-12">
+          <div>
             <p className="text-xs font-semibold text-[#655F35]">
               My Desk · {getFocusDisplayLabel(profile)} · {completedCount}/{exercises.length} done
             </p>

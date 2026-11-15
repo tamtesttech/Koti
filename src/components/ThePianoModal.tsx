@@ -120,7 +120,7 @@ export const ThePianoModal: React.FC<ThePianoModalProps> = ({
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#674223]/12">
-          <div className="pl-10 sm:pl-12">
+          <div>
             <p className="text-xs font-semibold text-[#C4863C]">The Piano</p>
             <h2
               id="piano-modal-title"

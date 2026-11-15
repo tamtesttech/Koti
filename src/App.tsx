@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   DEFAULT_PROFILE,
   SEEDED_PHQ9_HISTORY,
@@ -88,11 +88,6 @@ export default function App() {
   const [deskError, setDeskError] = useState<string | null>(null);
   const [deskFetchedWithAi, setDeskFetchedWithAi] = useState<boolean>(false);
 
-  // Background music state (/bg_music.mp3 at 15% volume)
-  const bgAudioRef = useRef<HTMLAudioElement | null>(null);
-  const [bgMusicUnlocked, setBgMusicUnlocked] = useState<boolean>(false);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
-
   useEffect(() => {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -100,54 +95,6 @@ export default function App() {
       // Ignore storage quota errors
     }
   }, [state]);
-
-  // Keep /bg_music.mp3 synchronized with Void silence rule and global mute toggle
-  useEffect(() => {
-    const audio = bgAudioRef.current;
-    if (!audio) return;
-    audio.volume = 0.15;
-
-    const shouldSilence = activeModal === 'void' || isMuted;
-    if (shouldSilence) {
-      audio.pause();
-      return;
-    }
-
-    if (bgMusicUnlocked) {
-      audio.play().catch(() => {
-        // Ignore autoplay restrictions if not triggered by direct gesture
-      });
-    }
-  }, [activeModal, bgMusicUnlocked, isMuted]);
-
-  const handleStartMusicFromIntro = useCallback(() => {
-    setBgMusicUnlocked(true);
-    const audio = bgAudioRef.current;
-    if (!audio || isMuted || activeModal === 'void') return;
-    audio.volume = 0.15;
-    audio.play().catch(() => {
-      // Ignore playback errors in restricted environments
-    });
-  }, [activeModal, isMuted]);
-
-  const handleToggleMute = useCallback(() => {
-    setIsMuted((prev) => {
-      const nextMuted = !prev;
-      const audio = bgAudioRef.current;
-      if (audio) {
-        if (nextMuted) {
-          audio.pause();
-        } else {
-          setBgMusicUnlocked(true);
-          if (activeModal !== 'void') {
-            audio.volume = 0.15;
-            audio.play().catch(() => {});
-          }
-        }
-      }
-      return nextMuted;
-    });
-  }, [activeModal]);
 
   const recentVoidTags = useMemo(
     () => state.voidHistory.map((v) => v.emotionalTag).slice(0, 4),
@@ -319,11 +266,6 @@ export default function App() {
     setTutorialIndex(0);
     setDeskFetchedWithAi(false);
     setDeskError(null);
-    setBgMusicUnlocked(false);
-    if (bgAudioRef.current) {
-      bgAudioRef.current.pause();
-      bgAudioRef.current.currentTime = 0;
-    }
     setStage('intro-questions');
   };
 
@@ -337,8 +279,6 @@ export default function App() {
       className="min-h-screen w-full text-[#4A2D15] flex flex-col relative isolate"
       data-stage={stage}
       data-modal={activeModal}
-      data-music-muted={isMuted ? 'true' : 'false'}
-      data-music-unlocked={bgMusicUnlocked ? 'true' : 'false'}
     >
       {/* Atmospheric clay cottage background */}
       <div className="fixed inset-0 -z-10 pointer-events-none" aria-hidden="true">
@@ -350,26 +290,11 @@ export default function App() {
         <div className="absolute inset-0 bg-[#DCC3AC]/52" />
       </div>
 
-      {/* Continuous low-volume background ambient audio (silent in The Void) */}
-      <audio
-        ref={bgAudioRef}
-        src="/bg_music.mp3"
-        loop
-        preload="auto"
-      />
-
       <TopBar
         coreFocus={getFocusDisplayLabel(state.profile)}
         showDemoMenu={true}
-        isMuted={isMuted}
-        onToggleMute={handleToggleMute}
         onReplayIntro={() => {
           setActiveModal('none');
-          setBgMusicUnlocked(false);
-          if (bgAudioRef.current) {
-            bgAudioRef.current.pause();
-            bgAudioRef.current.currentTime = 0;
-          }
           setStage('intro-questions');
         }}
         onReplayTutorial={() => {
@@ -393,7 +318,6 @@ export default function App() {
           onBackToQuestions={() => setStage('intro-questions')}
           onCompleteOnboarding={handleCompleteOnboarding}
           onSkip={handleSkipOnboarding}
-          onStartMusic={handleStartMusicFromIntro}
         />
       )}
 
